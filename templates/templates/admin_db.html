@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Dashboard - LuxeWash</title>
+  <link href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css" rel="stylesheet">
+  <style>
+    body { background:#0b1b2a; color:#ecf2f8; font-family: Inter, sans-serif; padding:20px; }
+    h1 { color:#4fc3f7; margin-bottom:20px; }
+    table { width:100%; margin-bottom:40px; border-radius:10px; overflow:hidden; }
+    th { background:#0e2235; color:#4fc3f7; font-weight:600; }
+    td, th { padding:10px; border:1px solid rgba(255,255,255,.1); }
+    .section-title { margin-top:40px; margin-bottom:10px; font-size:1.5rem; color:#f59e0b; }
+    .logout { float:right; margin-top:-40px; }
+    .logout a { color:#f5576c; font-weight:bold; text-decoration:none; }
+    .logout a:hover { text-decoration:underline; }
+  </style>
+</head>
+<body>
+  <h1>📊 LuxeWash Admin Dashboard</h1>
+  <div class="logout"><a href="{{ url_for('logout') }}">Logout</a></div>
+
+  <!-- Users -->
+  <div class="section-title">👥 Users</div>
+  <table id="usersTable" class="display">
+    <thead>
+      <tr><th>ID</th><th>Email</th><th>Admin?</th></tr>
+    </thead>
+    <tbody>
+      {% for u in users %}
+      <tr>
+        <td>{{ u.id if u.id else u["id"] }}</td>
+        <td>{{ u.email if u.email else u["email"] }}</td>
+        <td>{{ u.is_admin if u.is_admin else u["is_admin"] }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <!-- Bookings -->
+  <div class="section-title">🚗 Bookings</div>
+  <table id="bookingsTable" class="display">
+    <thead>
+      <tr>
+        <th>ID</th><th>Name</th><th>Phone</th><th>Email</th>
+        <th>Car</th><th>Service</th><th>Date</th><th>Time</th><th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for b in bookings %}
+      <tr>
+        <td>{{ b.id if b.id else b["id"] }}</td>
+        <td>{{ b.name if b.name else b["name"] }}</td>
+        <td>{{ b.phone if b.phone else b["phone"] }}</td>
+        <td>{{ b.email if b.email else b["email"] }}</td>
+        <td>{{ b.car_type if b.car_type else b["car_type"] }}</td>
+        <td>{{ b.service_type if b.service_type else b["service_type"] }}</td>
+        <td>{{ b.date if b.date else b["date"] }}</td>
+        <td>{{ b.time if b.time else b["time"] }}</td>
+        <td>{{ b.status if b.status else b["status"] }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <!-- Feedback -->
+  <div class="section-title">⭐ Feedback</div>
+  <table id="feedbackTable" class="display">
+    <thead>
+      <tr><th>ID</th><th>Name</th><th>Rating</th><th>Feedback</th></tr>
+    </thead>
+    <tbody>
+      {% for f in feedback %}
+      <tr>
+        <td>{{ f.id if f.id else f["id"] }}</td>
+        <td>{{ f.name if f.name else f["name"] }}</td>
+        <td>{{ f.rating if f.rating else f["rating"] }}</td>
+        <td>{{ f.text if f.text else f["text"] }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <!-- Scripts -->
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+  <script>
+    $(document).ready(function(){
+      $('#usersTable').DataTable();
+      $('#bookingsTable').DataTable();
+      $('#feedbackTable').DataTable();
+    });
+  </script>
+</body>
+</html>

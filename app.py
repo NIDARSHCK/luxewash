@@ -1,194 +1,193 @@
-from flask import Flask, render_template, request, jsonify
-from flask_cors import CORS
-import psycopg2
 import os
-import time
+import sqlite3
+from flask import Flask, render_template, request, redirect, url_for, session, jsonify
+from werkzeug.security import generate_password_hash, check_password_hash
+
+# For PostgreSQL (Render)
+import psycopg2
+from psycopg2.extras import RealDictCursor
 
 app = Flask(__name__)
-CORS(app)
+app.secret_key = os.getenv("SECRET_KEY", "dev_secret_key")
 
-# ------------------- DB Connection -------------------
-def get_db():
-    return psycopg2.connect(os.environ.get("DATABASE_URL"))
+# -------------------- Database Setup --------------------
+def get_db_connection():
+    """Connect to SQLite locally or PostgreSQL on Render."""
+    db_url = os.getenv("DATABASE_URL")
+    if db_url:  # Render/Postgres
+        conn = psycopg2.connect(db_url, cursor_factory=RealDictCursor)
+    else:       # Local SQLite
+        conn = sqlite3.connect("luxewash.db")
+        conn.row_factory = sqlite3.Row
+    return conn
 
-# ------------------- Initialize Tables -------------------
 def init_db():
-    conn = get_db()
+    """Initialize tables if they don’t exist."""
+    conn = get_db_connection()
     cur = conn.cursor()
 
     cur.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            id SERIAL PRIMARY KEY,
-            name TEXT,
-            email TEXT UNIQUE,
-            password TEXT
-        )
+    CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        email TEXT UNIQUE NOT NULL,
+        password TEXT NOT NULL,
+        is_admin BOOLEAN DEFAULT FALSE
+    )
     """)
 
     cur.execute("""
-        CREATE TABLE IF NOT EXISTS bookings (
-            id SERIAL PRIMARY KEY,
-            name TEXT,
-            phone TEXT,
-            email TEXT,
-            cartype TEXT,
-            service TEXT,
-            date TEXT,
-            time TEXT,
-            address TEXT,
-            status TEXT
-        )
+    CREATE TABLE IF NOT EXISTS bookings (
+        id SERIAL PRIMARY KEY,
+        name TEXT,
+        phone TEXT,
+        email TEXT,
+        car_type TEXT,
+        service_type TEXT,
+        date TEXT,
+        time TEXT,
+        address TEXT,
+        status TEXT DEFAULT 'Pending'
+    )
     """)
 
     cur.execute("""
-        CREATE TABLE IF NOT EXISTS feedback (
-            id SERIAL PRIMARY KEY,
-            rating INT,
-            name TEXT,
-            text TEXT,
-            ts BIGINT
-        )
+    CREATE TABLE IF NOT EXISTS feedback (
+        id SERIAL PRIMARY KEY,
+        name TEXT,
+        rating INTEGER,
+        text TEXT
+    )
     """)
 
     conn.commit()
-    cur.close()
     conn.close()
 
-# Run table creation once
 init_db()
 
-# ------------------- Routes -------------------
+# -------------------- Routes --------------------
 @app.route("/")
 def home():
     return render_template("index.html")
 
-# ---------- User Signup ----------
+# ---- Signup ----
 @app.route("/signup", methods=["POST"])
 def signup():
-    data = request.json
-    conn = get_db()
+    email = request.form.get("email")
+    password = request.form.get("password")
+    conn = get_db_connection()
     cur = conn.cursor()
+
+    hashed = generate_password_hash(password)
 
     try:
-        cur.execute("INSERT INTO users (name, email, password) VALUES (%s, %s, %s) RETURNING id",
-                    (data["name"], data["email"], data["password"]))
+        cur.execute("INSERT INTO users (email, password) VALUES (%s, %s)",
+                    (email, hashed) if isinstance(cur, psycopg2.extensions.cursor) else (email, hashed))
         conn.commit()
-        user_id = cur.fetchone()[0]
-        return jsonify({"success": True, "id": user_id})
     except Exception as e:
         conn.rollback()
-        return jsonify({"success": False, "error": str(e)})
+        return jsonify({"error": str(e)}), 400
     finally:
-        cur.close()
         conn.close()
 
-# ---------- User Signin ----------
+    return redirect(url_for("home"))
+
+# ---- Signin ----
 @app.route("/signin", methods=["POST"])
 def signin():
-    data = request.json
-    conn = get_db()
-    cur = conn.cursor()
+    email = request.form.get("email")
+    password = request.form.get("password")
 
-    cur.execute("SELECT * FROM users WHERE email=%s AND password=%s",
-                (data["email"], data["password"]))
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM users WHERE email=%s" if isinstance(cur, psycopg2.extensions.cursor)
+                else "SELECT * FROM users WHERE email=?", (email,))
     user = cur.fetchone()
-
-    cur.close()
     conn.close()
 
-    if user:
-        return jsonify({"success": True, "user": user})
-    return jsonify({"success": False, "error": "Invalid credentials"})
+    if user and check_password_hash(user["password"], password):
+        session["user"] = {"id": user["id"], "email": user["email"], "is_admin": user["is_admin"]}
+        return redirect(url_for("home"))
+    return "Invalid login", 401
 
-# ---------- Booking ----------
-@app.route("/book", methods=["POST"])
-def book():
-    data = request.json
-    conn = get_db()
+@app.route("/logout")
+def logout():
+    session.pop("user", None)
+    return redirect(url_for("home"))
+
+# ---- Booking ----
+@app.route("/booking", methods=["POST"])
+def booking():
+    data = request.form
+    conn = get_db_connection()
     cur = conn.cursor()
-
-    cur.execute("""INSERT INTO bookings 
-        (name, phone, email, cartype, service, date, time, address, status)
-        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id""",
-        (data["name"], data["phone"], data["email"], data["cartype"], data["service"],
-         data["date"], data["time"], data["address"], "Pending"))
+    cur.execute("""
+    INSERT INTO bookings (name, phone, email, car_type, service_type, date, time, address)
+    VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+    """ if isinstance(cur, psycopg2.extensions.cursor)
+    else """
+    INSERT INTO bookings (name, phone, email, car_type, service_type, date, time, address)
+    VALUES (?,?,?,?,?,?,?,?)
+    """, (
+        data.get("name"), data.get("phone"), data.get("email"),
+        data.get("carType"), data.get("serviceType"), data.get("date"),
+        data.get("time"), data.get("address")
+    ))
     conn.commit()
-    booking_id = cur.fetchone()[0]
-
-    cur.close()
     conn.close()
+    return redirect(url_for("home"))
 
-    return jsonify({"success": True, "id": booking_id})
-
-# ---------- View Orders ----------
-@app.route("/orders", methods=["GET"])
-def orders():
-    conn = get_db()
-    cur = conn.cursor()
-
-    cur.execute("SELECT * FROM bookings ORDER BY id DESC")
-    orders = cur.fetchall()
-
-    cur.close()
-    conn.close()
-
-    return jsonify(orders)
-
-# ---------- Feedback ----------
+# ---- Feedback ----
 @app.route("/feedback", methods=["POST"])
 def feedback():
-    data = request.json
-    conn = get_db()
+    data = request.form
+    conn = get_db_connection()
     cur = conn.cursor()
-
-    cur.execute("INSERT INTO feedback (rating, name, text, ts) VALUES (%s, %s, %s, %s) RETURNING id",
-                (data["rating"], data.get("name"), data["text"], int(time.time())))
+    cur.execute("""
+    INSERT INTO feedback (name, rating, text) VALUES (%s,%s,%s)
+    """ if isinstance(cur, psycopg2.extensions.cursor)
+    else "INSERT INTO feedback (name, rating, text) VALUES (?,?,?)",
+                (data.get("name"), data.get("rating"), data.get("text")))
     conn.commit()
-    fb_id = cur.fetchone()[0]
-
-    cur.close()
     conn.close()
+    return redirect(url_for("home"))
 
-    return jsonify({"success": True, "id": fb_id})
+# ---- Simple Admin ----
+@app.route("/admin")
+def admin():
+    if "user" not in session or not session["user"]["is_admin"]:
+        return "Unauthorized", 403
 
-@app.route("/feedbacks", methods=["GET"])
-def feedbacks():
-    conn = get_db()
+    conn = get_db_connection()
     cur = conn.cursor()
-
-    cur.execute("SELECT * FROM feedback ORDER BY id DESC LIMIT 10")
-    feedbacks = cur.fetchall()
-
-    cur.close()
-    conn.close()
-
-    return jsonify(feedbacks)
-
-# ---------- Admin DB Viewer ----------
-@app.route("/admin/db")
-def admin_db():
-    conn = get_db()
-    cur = conn.cursor()
-
+    cur.execute("SELECT * FROM bookings")
+    bookings = cur.fetchall()
     cur.execute("SELECT * FROM users")
     users = cur.fetchall()
+    conn.close()
+    return render_template("admin.html", bookings=bookings, users=users)
+
+# ---- Advanced Admin Dashboard ----
+@app.route("/admin/db")
+def admin_db():
+    if "user" not in session or not session["user"]["is_admin"]:
+        return "Unauthorized", 403
+
+    conn = get_db_connection()
+    cur = conn.cursor()
 
     cur.execute("SELECT * FROM bookings")
     bookings = cur.fetchall()
 
+    cur.execute("SELECT * FROM users")
+    users = cur.fetchall()
+
     cur.execute("SELECT * FROM feedback")
-    feedbacks = cur.fetchall()
+    feedback = cur.fetchall()
 
-    cur.close()
     conn.close()
+    return render_template("admin_db.html", bookings=bookings, users=users, feedback=feedback)
 
-    return f"""
-    <h1>Database Viewer</h1>
-    <h2>Users</h2><pre>{users}</pre>
-    <h2>Bookings</h2><pre>{bookings}</pre>
-    <h2>Feedback</h2><pre>{feedbacks}</pre>
-    """
-
-# ------------------- Run -------------------
+# -------------------- Main --------------------
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    port = int(os.getenv("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=True)

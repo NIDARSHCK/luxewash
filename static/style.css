@@ -1,0 +1,16 @@
+select, input[type="date"], input[type="time"] {
+  background: #1f3a55;
+  color: #fff;
+  border: 1px solid #4fc3f7;
+  padding: 10px;
+  border-radius: 8px;
+}
+select option {
+  background: #0e2235;
+  color: #fff;
+}
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator {
+  filter: invert(75%) sepia(100%) saturate(200%) hue-rotate(180deg);
+  cursor: pointer;
+}

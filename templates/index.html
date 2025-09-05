@@ -1,0 +1,778 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>LuxeWash — Premium Car Care (Auth gated)</title>
+  <meta name="description" content="LuxeWash — premium car wash & detailing. Auth-gated demo with booking, orders, deals, feedback and shop registration."/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg-1:#071026; --bg-2:#0e2235;
+      --card: rgba(255,255,255,0.03);
+      --glass: rgba(255,255,255,0.04);
+      --muted: #9fb6c9;
+      --text: #ecf2f8;
+      --primary:#4fc3f7; --accent:#667eea;
+      --hot: #f5576c;
+      --success:#34d399;
+      --radius:14px;
+      --shadow: 0 18px 40px rgba(2,6,23,0.6);
+      --ring: 0 6px 20px rgba(79,195,247,0.12);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;scroll-behavior:smooth}
+    body{
+      font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;
+      background: radial-gradient(800px 500px at 10% -10%, rgba(30,60,90,0.18), transparent 40%),
+                  radial-gradient(700px 500px at 90% 10%, rgba(10,30,50,0.12), transparent 40%),
+                  linear-gradient(180deg,var(--bg-1),var(--bg-2));
+      color:var(--text);
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      min-height:100vh;
+    }
+
+    a{color:inherit}
+    .container{max-width:1200px;margin:0 auto;padding:0 18px}
+
+    /* NAV */
+    nav.top{
+      position:sticky;top:0;z-index:60;
+      background: linear-gradient(180deg, rgba(3,8,18,0.75), rgba(3,8,18,0.45));
+      border-bottom:1px solid rgba(255,255,255,0.03);
+      backdrop-filter: blur(8px);
+    }
+    .nav-inner{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px}
+    .brand{display:flex;gap:12px;align-items:center;font-family:"Space Grotesk",Inter,sans-serif}
+    .brand-badge{width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,var(--primary),var(--accent));display:grid;place-items:center;font-weight:800;color:#00111a;box-shadow:var(--shadow)}
+    .nav-links{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .chip{padding:8px 12px;border-radius:999px;background:var(--glass);border:1px solid rgba(255,255,255,0.03);color:var(--muted);font-weight:600}
+    .chip:hover{box-shadow:var(--ring);color:var(--text);transform:translateY(-3px)}
+
+    /* AUTH overlay card */
+    #authWrap{
+      position:fixed;inset:0;display:grid;place-items:center;background:linear-gradient(180deg, rgba(2,6,23,0.75), rgba(2,6,23,0.85));
+      z-index:200;padding:20px;
+    }
+    .auth-card{width:min(980px,98vw);border-radius:18px;padding:18px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border:1px solid rgba(255,255,255,0.04);box-shadow:var(--shadow)}
+    .form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+    .field{display:flex;flex-direction:column;gap:6px}
+    input,textarea,select{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);color:var(--text);padding:10px;border-radius:10px;outline:none}
+    input:focus,textarea:focus,select:focus{box-shadow:var(--ring)}
+
+    /* Buttons */
+    .btn{
+      display:inline-flex;gap:10px;align-items:center;justify-content:center;
+      padding:10px 14px;border-radius:12px;border:none;cursor:pointer;font-weight:700;transition:all .22s ease;
+    }
+    .btn-primary{
+      background:linear-gradient(135deg,var(--primary),var(--accent));
+      color:#001019;box-shadow:0 8px 20px rgba(79,195,247,0.18);
+    }
+    .btn-primary:hover{transform:translateY(-4px) scale(1.03);box-shadow:0 18px 36px rgba(79,195,247,0.24)}
+    .btn-ghost{background:transparent;border:1px solid rgba(67, 110, 167, 0.06);color:var(--text)}
+    .btn-brand{background:linear-gradient(90deg,#ffd085,#ff7eb6);color:#1a041b}
+    .btn-danger{background:linear-gradient(135deg,#ff8a8a,#f5576c);color:#201010}
+
+    /* Hero + sections */
+    header.hero{padding:68px 0 28px}
+    .hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:22px;align-items:center}
+    .headline{font-family:"Space Grotesk",Inter,sans-serif;font-size:clamp(2rem,5vw,3.4rem);line-height:1.02;margin:0}
+    .sub{color:var(--muted);margin:8px 0 18px}
+    .hero-card{border-radius:14px;overflow:hidden;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border:1px solid rgba(255,255,255,0.04);box-shadow:var(--shadow)}
+
+    /* layout helpers */
+    section{padding:60px 0;opacity:0;transform:translateY(28px);transition:all .8s cubic-bezier(.2,.9,.2,1);scroll-margin-top:88px}
+    section.visible{opacity:1;transform:translateY(0)}
+    .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px}
+    .card{position:relative;padding:16px;border-radius:12px;background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));border:1px solid rgba(255,255,255,0.04);box-shadow:var(--shadow);transition:transform .28s ease, box-shadow .28s ease}
+    .card:hover{transform:translateY(-8px);box-shadow:0 24px 60px rgba(2,6,23,0.6)}
+    .tag{position:absolute;top:12px;right:12px;padding:6px 10px;border-radius:999px;background:rgba(102,126,234,0.12);color:#dfe8ff;font-weight:800;border:1px solid rgba(102,126,234,0.22);font-size:.85rem}
+
+    .form-inline{display:flex;gap:10px;flex-wrap:wrap}
+
+    .tiny{font-size:.9rem;color:var(--muted)}
+
+    footer{padding:26px 0;color:var(--muted);border-top:1px solid rgba(255,255,255,0.03);margin-top:20px}
+
+   
+   @media(max-width:900px){ .hero-grid{grid-template-columns:1fr} .auth-card{padding:12px} .nav-inner{padding:10px} }
+
+ select, input[type="date"], input[type="time"] {
+  background: #1f3a55;
+  color: #fff;
+  border: 1px solid #4fc3f7;
+  padding: 10px;
+  border-radius: 8px;
+}
+select option { background: #0e2235; color: #fff; }
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator {
+  filter: invert(75%) sepia(100%) saturate(200%) hue-rotate(180deg);
+  cursor: pointer;
+}
+ </style>
+</head>
+<body>
+  <!-- AUTH WRAP (shown when NOT signed in) -->
+  <div id="authWrap" aria-hidden="true">
+    <div class="auth-card container">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div style="display:flex;gap:12px;align-items:center">
+          <div class="brand-badge">LW</div>
+          <div>
+            <div style="font-weight:800;font-size:1.05rem">LuxeWash</div>
+            <div class="tiny">Sign in or create an account to continue</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 360px;gap:18px">
+        <div id="authForms">
+          <!-- SIGN IN -->
+          <div id="signInBox">
+            <h3 style="margin:0 0 6px">Sign In</h3>
+            <p class="tiny" style="margin:0 0 12px">Enter email or phone and password. We'll send a verification code (demo shows code in UI).</p>
+            <form id="authSignInForm">
+              <div class="form-grid">
+                <label class="field" style="grid-column:1 / -1"><span>Email or Phone</span><input id="auth_login" required placeholder="you@example.com or 9876543210"></label>
+                <label class="field" style="grid-column:1 / -1"><span>Password</span><input id="auth_pass" type="password" required placeholder="••••••"></label>
+              </div>
+              <div style="margin-top:12px;display:flex;gap:10px">
+                <button class="btn btn-primary" type="submit">Sign In</button>
+                <button type="button" id="toSignupBtn" class="btn btn-ghost">Sign Up</button>
+              </div>
+            </form>
+
+            <div id="verifySection" style="margin-top:14px;display:none">
+              <div class="tiny">A 6-digit code was sent to your contact. (Shown here for demo)</div>
+              <div id="auth_code_display" style="font-weight:800;margin:8px 0"></div>
+              <div class="form-grid">
+                <label class="field" style="grid-column:1 / -1"><span>Verification code</span><input id="auth_code_input" placeholder="123456"></label>
+              </div>
+              <div style="margin-top:8px;display:flex;gap:10px">
+                <button id="auth_verify_btn" class="btn btn-primary">Verify & Enter</button>
+                <button id="auth_resend_btn" class="btn btn-ghost" disabled>Resend (60s)</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- SIGN UP -->
+          <div id="signUpBox" style="display:none">
+            <h3 style="margin:0 0 6px">Create account</h3>
+            <p class="tiny" style="margin:0 0 12px">Register once and sign in across devices.</p>
+            <form id="authSignUpForm">
+              <div class="form-grid">
+                <label class="field"><span>Name</span><input id="su_name" required></label>
+                <label class="field"><span>Email</span><input id="su_email" type="email" required></label>
+                <label class="field"><span>Phone</span><input id="su_phone" inputmode="numeric" pattern="\d{10}" placeholder="10-digit" required></label>
+                <label class="field"><span>Password</span><input id="su_pass" type="password" required></label>
+              </div>
+              <div style="margin-top:12px;display:flex;gap:10px">
+                <button class="btn btn-primary" type="submit">Create account</button>
+                <button id="toSigninBtn" type="button" class="btn btn-ghost">Back to Sign In</button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <div>
+          <div class="card">
+            <div style="font-weight:800">Why sign in?</div>
+            <ul style="margin:8px 0 0 16px;color:var(--muted)">
+              <li>Access bookings, orders, exclusive deals</li>
+              <li>Sync your history across devices</li>
+              <li>Register shops and get leads</li>
+            </ul>
+          </div>
+
+          <div class="card" style="margin-top:12px">
+            <div style="font-weight:800">Recent feedback</div>
+            <div id="auth_fb_preview" class="tiny" style="margin-top:8px"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- APP (hidden until signed in) -->
+  <div id="app" style="display:none">
+    <nav class="top">
+      <div class="container nav-inner">
+        <div class="brand">
+          <div class="brand-badge">LW</div>
+          <div style="font-weight:800">LuxeWash</div>
+        </div>
+        <div class="nav-links">
+          <a class="chip" href="#home">Home</a>
+          <a class="chip" href="#services">Services</a>
+          <a class="chip" href="#deals">Deals</a>
+          <a class="chip" href="#booking">Booking</a>
+          <a class="chip" href="#orders">Orders</a>
+          <a class="chip" href="#register">Register Shop</a>
+          <a class="chip" href="#feedback">Feedback</a>
+          <a class="chip" href="#contact">Contact</a>
+          <button id="logoutBtn" class="chip" title="Logout">Logout</button>
+        </div>
+      </div>
+    </nav>
+
+    <main class="container">
+      <!-- HERO -->
+      <header id="home" class="hero">
+        <div class="hero-grid">
+          <div>
+            <h1 class="headline">Premium Car Care, Zero Hassle</h1>
+            <p class="sub">Doorstep washes, detailing, ceramic coating and more — trusted by thousands. Book in seconds, track orders, and unlock membership perks.</p>
+            <div style="display:flex;gap:10px;margin-top:12px">
+              <a class="btn btn-primary" href="#booking">Book a Wash</a>
+              <a class="btn btn-ghost" href="#services">Explore Services</a>
+            </div>
+            <div class="tiny" style="margin-top:12px">Signed in as <span id="userLabel" style="font-weight:800"></span></div>
+          </div>
+          <div class="hero-card">
+            <img src="https://images.unsplash.com/photo-1511918984145-48de785d4c4e?auto=format&fit=crop&w=1200&q=80" alt="car" style="width:100%;height:240px;object-fit:cover">
+          </div>
+        </div>
+      </header>
+
+      <!-- SERVICES -->
+      <section id="services">
+        <h2>Services & Prices</h2>
+        <p class="tiny">Transparent pricing, eco-friendly products, skilled technicians.</p>
+        <div class="cards" style="margin-top:12px">
+          <div class="card">
+            <div class="tag">Popular</div>
+            <img src="https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=800&q=60" alt="" style="width:100%;height:140px;object-fit:cover;border-radius:10px;margin-bottom:10px">
+            <h3>Exterior Wash</h3><p class="tiny">Touchless wash, foam bath, tire shine.</p><div style="font-weight:800;margin-top:8px">₹1,200</div>
+            <div style="margin-top:10px"><button class="btn btn-primary" data-service="Exterior Wash">Book Now</button></div>
+          </div>
+
+          <div class="card">
+            <img src="https://images.unsplash.com/photo-1465101046530-73398c7f28ca?auto=format&fit=crop&w=800&q=60" alt="" style="width:100%;height:140px;object-fit:cover;border-radius:10px;margin-bottom:10px">
+            <h3>Interior Cleaning</h3><p class="tiny">Vacuum, sanitize, dashboard polish.</p><div style="font-weight:800;margin-top:8px">₹1,500</div>
+            <div style="margin-top:10px"><button class="btn btn-primary" data-service="Interior Cleaning">Book Now</button></div>
+          </div>
+
+          <div class="card">
+            <div class="tag">Best Value</div>
+            <img src="https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=800&q=60" alt="" style="width:100%;height:140px;object-fit:cover;border-radius:10px;margin-bottom:10px">
+            <h3>Full Detailing</h3><p class="tiny">Exterior + interior + wax & polish.</p><div style="font-weight:800;margin-top:8px">₹3,000</div>
+            <div style="margin-top:10px"><button class="btn btn-primary" data-service="Full Detailing">Book Now</button></div>
+          </div>
+
+          <div class="card">
+            <img src="https://images.unsplash.com/photo-1519125323398-675f0ddb6308?auto=format&fit=crop&w=800&q=60" alt="" style="width:100%;height:140px;object-fit:cover;border-radius:10px;margin-bottom:10px">
+            <h3>Ceramic Coating</h3><p class="tiny">Long-lasting protection and deep gloss.</p><div style="font-weight:800;margin-top:8px">₹9,500</div>
+            <div style="margin-top:10px"><button class="btn btn-primary" data-service="Ceramic Coating">Book Now</button></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- DEALS -->
+      <section id="deals">
+        <h2>Exclusive Deals & Memberships</h2>
+        <p class="tiny">Limited-time discounts — timer resets daily at midnight.</p>
+        <div class="cards" style="margin-top:12px">
+          <div class="card">
+            <div class="tag">-35%</div>
+            <h3>Monsoon Shine Pack</h3><p class="tiny">Exterior wash + windshield treatment</p>
+            <div style="font-weight:800;margin-top:8px"><del style="opacity:.6">₹1,850</del> ₹1,200</div>
+            <div style="display:flex;gap:8px;margin-top:12px;align-items:center">
+              <div class="tiny">Ends in</div>
+              <div class="tiny" id="dealTimer1"><b data-h>00</b>h <b data-m>00</b>m <b data-s>00</b>s</div>
+            </div>
+            <div style="margin-top:12px"><button class="btn btn-primary" data-claim="Monsoon Shine Pack">Claim Deal</button></div>
+          </div>
+
+          <div class="card">
+            <div class="tag">-20%</div>
+            <h3>Weekend Interior Duo</h3><p class="tiny">Deep interior clean for two cars</p>
+            <div style="font-weight:800;margin-top:8px"><del style="opacity:.6">₹3,000</del> ₹2,400</div>
+            <div style="margin-top:12px"><button class="btn btn-primary" data-claim="Weekend Interior Duo">Claim Deal</button></div>
+          </div>
+
+          <div class="card">
+            <div class="tag">Member</div>
+            <h3>Silver Membership</h3><p class="tiny">2 washes / month + priority slots</p>
+            <div style="font-weight:800;margin-top:8px">₹799 / mo</div>
+            <div style="margin-top:12px"><button class="btn btn-ghost" data-claim="Silver Membership">Get Membership</button></div>
+          </div>
+
+          <div class="card">
+            <div class="tag">Popular</div>
+            <h3>Gold Membership</h3><p class="tiny">4 washes / month + 10% off services</p>
+            <div style="font-weight:800;margin-top:8px">₹1,499 / mo</div>
+            <div style="margin-top:12px"><button class="btn btn-primary" data-claim="Gold Membership">Get Membership</button></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- BOOKING -->
+      <section id="booking">
+        <div style="display:grid;grid-template-columns:1fr 360px;gap:18px;align-items:start">
+          <div>
+            <h2>Book Your Service</h2>
+            <p class="tiny">Choose date & time. We'll confirm and notify you.</p>
+            <form id="bookingForm" autocomplete="on">
+              <div class="form-grid">
+                <label class="field"><span>Name</span><input id="bk_name" required></label>
+                <label class="field"><span>Phone</span><input id="bk_phone" inputmode="numeric" pattern="\d{10}" placeholder="10-digit" required></label>
+                <label class="field"><span>Email</span><input id="bk_email" type="email" required></label>
+                <label class="field"><span>Car Type</span>
+                  <select id="bk_cartype" required><option value="">Select...</option><option>Sedan</option><option>SUV</option><option>Hatchback</option><option>Luxury</option></select>
+                </label>
+                <label class="field"><span>Service</span>
+                  <select id="bk_service" required><option value="">Select...</option><option>Exterior Wash</option><option>Interior Cleaning</option><option>Full Detailing</option><option>Ceramic Coating</option></select>
+                </label>
+                <label class="field"><span>Date</span><input id="bk_date" type="date" required></label>
+                <label class="field"><span>Time</span><input id="bk_time" type="time" required></label>
+                <label class="field" style="grid-column:1 / -1"><span>Address</span><textarea id="bk_addr" rows="3" required placeholder="Flat / Street / City"></textarea></label>
+              </div>
+              <div style="margin-top:10px;display:flex;gap:10px">
+                <button class="btn btn-primary" type="submit">Confirm Booking</button>
+                <button class="btn btn-ghost" type="reset">Reset</button>
+              </div>
+              <div class="tiny" style="margin-top:8px">By booking you agree to our terms & cancellation policy.</div>
+            </form>
+          </div>
+
+          <div class="card">
+            <div style="font-weight:800">Order Preview</div>
+            <div id="preview" class="tiny" style="margin-top:10px">Fill the form to see a live summary.</div>
+            <hr style="border:none;border-top:1px solid rgba(255,255,255,0.04);margin:12px 0">
+            <div style="font-weight:800">Why LuxeWash?</div>
+            <ul class="tiny" style="margin-top:8px">
+              <li>On-time technicians</li>
+              <li>pH-safe chemicals</li>
+              <li>Water-saving processes</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- ORDERS -->
+      <section id="orders">
+        <h2>Your Orders</h2>
+        <p class="tiny">Track your pending and confirmed bookings.</p>
+        <div id="ordersList" style="margin-top:12px"></div>
+        <div id="noOrders" class="tiny" style="display:none;margin-top:8px">No orders yet — make your first <a href="#booking">booking</a>.</div>
+      </section>
+
+      <!-- REGISTER SHOP -->
+      <section id="register">
+        <h2>Register Your Shop</h2>
+        <p class="tiny">Partner with LuxeWash to receive online bookings.</p>
+        <form id="shopForm">
+          <div class="form-grid">
+            <label class="field"><span>Shop Name</span><input id="sp_name" required></label>
+            <label class="field"><span>Owner Name</span><input id="sp_owner" required></label>
+            <label class="field"><span>Email</span><input id="sp_email" type="email" required></label>
+            <label class="field"><span>Phone</span><input id="sp_phone" inputmode="numeric" pattern="\d{10}" required></label>
+            <label class="field" style="grid-column:1 / -1"><span>Address</span><textarea id="sp_addr" rows="3" required></textarea></label>
+            <label class="field"><span>City</span><input id="sp_city" required></label>
+            <label class="field"><span>Pincode</span><input id="sp_pin" inputmode="numeric" pattern="\d{6}" required></label>
+            <label class="field" style="grid-column:1 / -1"><span>Services (comma separated)</span><input id="sp_services" required></label>
+          </div>
+          <div style="margin-top:10px;display:flex;gap:10px">
+            <button class="btn btn-primary" type="submit">Register Shop</button>
+            <button class="btn btn-ghost" type="reset">Reset</button>
+          </div>
+        </form>
+      </section>
+
+      <!-- FEEDBACK -->
+      <section id="feedback">
+        <h2>Feedback</h2>
+        <p class="tiny">Rate your experience and help us improve.</p>
+        <div style="display:grid;grid-template-columns:1fr 360px;gap:18px;align-items:start">
+          <div>
+            <form id="fbForm">
+              <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+                <button type="button" class="btn btn-ghost" data-emoji="1">😡</button>
+                <button type="button" class="btn btn-ghost" data-emoji="2">🙁</button>
+                <button type="button" class="btn btn-ghost" data-emoji="3">😐</button>
+                <button type="button" class="btn btn-ghost" data-emoji="4">🙂</button>
+                <button type="button" class="btn btn-primary" data-emoji="5">😍</button>
+              </div>
+              <div class="form-grid">
+                <label class="field" style="grid-column:1 / -1"><span>Name (optional)</span><input id="fb_name" placeholder="Your name"></label>
+                <label class="field" style="grid-column:1 / -1"><span>Your feedback</span><textarea id="fb_text" rows="4" placeholder="Tell us what you loved or we can improve."></textarea></label>
+              </div>
+              <div style="margin-top:8px"><button class="btn btn-primary" type="submit">Submit Feedback</button></div>
+            </form>
+          </div>
+          <div class="card">
+            <div style="font-weight:800">Recent</div>
+            <div id="fbList" style="margin-top:10px" class="tiny"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- CONTACT -->
+      <section id="contact">
+        <h2>Contact</h2>
+        <p class="tiny">We're available 08:00–20:00 (Mon–Sat).</p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:12px">
+          <div class="card"><h3>Email</h3><p class="tiny"><a href="mailto:info@luxewash.com">info@luxewash.com</a></p></div>
+          <div class="card"><h3>Phone</h3><p class="tiny"><a href="tel:+919876543210">+91 98765 43210</a></p></div>
+          <div class="card"><h3>Address</h3><p class="tiny">123 Luxe Street, Car City, India</p></div>
+        </div>
+      </section>
+
+      <footer style="margin-top:24px"><div class="tiny">© 2025 LuxeWash — built with care.</div></footer>
+    </main>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" style="position:fixed;right:18px;bottom:18px;background:linear-gradient(90deg,#12c28b,#34d399);padding:10px 14px;border-radius:12px;display:none;color:#00211b;font-weight:700;z-index:9999"></div>
+
+  <script>
+    // Utilities
+    const $ = (s, r = document) => r.querySelector(s);
+    const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+    const toast = (msg) => {
+      const el = $("#toast");
+      el.textContent = msg;
+      el.style.display = "block";
+      clearTimeout(el._t);
+      el._t = setTimeout(()=>el.style.display = "none", 2500);
+    };
+    const escapeHtml = (str) => {
+      if (str === null || str === undefined) return "";
+      return String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+    };
+
+    // Storage helpers
+    const usersKey = "lw_users";
+    const sessionKey = "lw_session";
+    const ordersKey = "lw_orders";   // object: {email: [orders]}
+    const claimsKey = "lw_claims";   // object: {email: [claims]}
+    const feedbackKey = "lw_feedback"; // array
+
+    function getUsers(){ try{ return JSON.parse(localStorage.getItem(usersKey)||"[]"); }catch(e){ return []; } }
+    function saveUsers(u){ localStorage.setItem(usersKey, JSON.stringify(u)); }
+    function findUser(login){ const u = getUsers(); return u.find(x => x.email === login || x.phone === login) || null; }
+    function setSession(user){ localStorage.setItem(sessionKey, JSON.stringify({email:user.email,name:user.name,ts:Date.now()})); }
+    function clearSession(){ localStorage.removeItem(sessionKey); }
+    function getSession(){ try{ return JSON.parse(localStorage.getItem(sessionKey)||"null"); }catch(e){ return null; } }
+
+    // AUTH UI references
+    const authWrap = $("#authWrap");
+    const app = $("#app");
+    const userLabel = $("#userLabel");
+    const logoutBtn = $("#logoutBtn");
+
+    // Show/hide based on session
+    function showAppForSession(sess){
+      if(!sess){ showAuth(); return; }
+      authWrap.style.display = "none";
+      app.style.display = "block";
+      userLabel.textContent = (sess.name || sess.email);
+      // refresh dynamic areas
+      renderAuthFeedbackPreview();
+      renderFeedback();
+      renderOrders();
+      bindClaimButtons();
+    }
+    function showAuth(){ authWrap.style.display = "grid"; app.style.display = "none"; }
+
+    // On load: check session
+    const sess = getSession();
+    if(sess){ showAppForSession(sess); } else { showAuth(); }
+
+    // Populate auth preview (feedback)
+    function renderAuthFeedbackPreview(){
+      const list = JSON.parse(localStorage.getItem(feedbackKey) || "[]");
+      const tgt = $("#auth_fb_preview");
+      tgt.innerHTML = list.slice(0,4).map(f => `<div style="padding:6px;border-radius:8px;background:rgba(255,255,255,0.02);margin-bottom:6px">${escapeHtml(f.text)}</div>`).join("") || "<div class='tiny'>No feedback yet.</div>";
+    }
+
+    // SIGN UP / SIGN IN flows
+    $("#toSignupBtn").addEventListener("click", ()=>{
+      $("#signInBox").style.display = "none";
+      $("#signUpBox").style.display = "block";
+    });
+    $("#toSigninBtn").addEventListener("click", ()=>{
+      $("#signUpBox").style.display = "none";
+      $("#signInBox").style.display = "block";
+    });
+
+    // Sign up
+    $("#authSignUpForm").addEventListener("submit", (e)=>{
+      e.preventDefault();
+      const name = $("#su_name").value.trim();
+      const email = $("#su_email").value.trim().toLowerCase();
+      const phone = $("#su_phone").value.trim();
+      const pass = $("#su_pass").value;
+      if(!/^\d{10}$/.test(phone)){ toast("Enter a valid 10-digit phone"); return; }
+      const users = getUsers();
+      if(users.some(u => u.email === email || u.phone === phone)){ toast("User already exists"); return; }
+      users.push({name,email,phone,pass});
+      saveUsers(users);
+      toast("Account created — please sign in");
+      $("#auth_login").value = email;
+      $("#signUpBox").style.display = "none";
+      $("#signInBox").style.display = "block";
+    });
+
+    // Sign in -> OTP
+    let currentSignUser = null;
+    let currentOTP = "";
+    let resendTimer = null;
+    let resendLeft = 0;
+    function startResendTimer(){
+      resendLeft = 60;
+      $("#auth_resend_btn").disabled = true;
+      $("#auth_resend_btn").textContent = "Resend (60s)";
+      clearInterval(resendTimer);
+      resendTimer = setInterval(()=>{
+        resendLeft--;
+        $("#auth_resend_btn").textContent = `Resend (${resendLeft}s)`;
+        if(resendLeft <= 0){ clearInterval(resendTimer); $("#auth_resend_btn").disabled = false; $("#auth_resend_btn").textContent = "Resend"; }
+      }, 1000);
+    }
+
+    $("#authSignInForm").addEventListener("submit", (e)=>{
+      e.preventDefault();
+      const login = $("#auth_login").value.trim();
+      const pass = $("#auth_pass").value;
+      const user = findUser(login);
+      if(!user || user.pass !== pass){ toast("Invalid login or password"); return; }
+      currentSignUser = user;
+      currentOTP = String(Math.floor(100000 + Math.random()*900000));
+      $("#auth_code_display").textContent = "Code: " + currentOTP; // for demo only
+      $("#verifySection").style.display = "block";
+      startResendTimer();
+      toast("Verification code sent");
+    });
+
+    $("#auth_resend_btn").addEventListener("click", ()=>{
+      if(!currentSignUser) return;
+      currentOTP = String(Math.floor(100000 + Math.random()*900000));
+      $("#auth_code_display").textContent = "Code: " + currentOTP;
+      startResendTimer();
+      toast("New code sent");
+    });
+
+    $("#auth_verify_btn").addEventListener("click", ()=>{
+      const entered = $("#auth_code_input").value.trim();
+      if(!currentSignUser){ toast("No sign-in in progress"); return; }
+      if(entered === currentOTP){
+        setSession(currentSignUser);
+        $("#auth_code_input").value = "";
+        $("#verifySection").style.display = "none";
+        currentSignUser = null;
+        currentOTP = "";
+        toast("Signed in — welcome!");
+        showAppForSession(getSession());
+      } else {
+        toast("Invalid code");
+      }
+    });
+
+    // Logout
+    logoutBtn.addEventListener("click", ()=>{
+      clearSession();
+      // show auth again
+      showAuth();
+      toast("Logged out");
+    });
+
+    // Booking (per-user)
+    function getOrders(){ try{ return JSON.parse(localStorage.getItem(ordersKey) || "{}"); }catch(e){ return {}; } }
+    function saveOrders(o){ localStorage.setItem(ordersKey, JSON.stringify(o)); }
+    $("#bookingForm").addEventListener("submit", (e)=>{
+      e.preventDefault();
+      const sess = getSession();
+      if(!sess){ toast("Please sign in to book"); showAuth(); return; }
+      const order = {
+        name: $("#bk_name").value.trim(),
+        phone: $("#bk_phone").value.trim(),
+        email: $("#bk_email").value.trim(),
+        carType: $("#bk_cartype").value || "",
+        serviceType: $("#bk_service").value || "",
+        date: $("#bk_date").value || "",
+        time: $("#bk_time").value || "",
+        address: $("#bk_addr").value.trim(),
+        status: "Pending",
+        ts: Date.now()
+      };
+      if(!/^\d{10}$/.test(order.phone)){ toast("Enter valid 10-digit phone"); return; }
+      if(!order.date || !order.time){ toast("Pick date & time"); return; }
+      const all = getOrders();
+      all[sess.email] = all[sess.email] || [];
+      all[sess.email].unshift(order);
+      saveOrders(all);
+      renderOrders();
+      e.target.reset();
+      toast("Booking created!");
+      location.hash = "#orders";
+    });
+
+    function renderOrders(){
+      const sess = getSession();
+      const wrap = $("#ordersList");
+      wrap.innerHTML = "";
+      if(!sess){ $("#noOrders").style.display = "block"; return; }
+      const all = getOrders();
+      const list = all[sess.email] || [];
+      if(list.length === 0){ $("#noOrders").style.display = "block"; return; }
+      $("#noOrders").style.display = "none";
+      list.forEach((o, idx) => {
+        const div = document.createElement("div");
+        div.className = "card";
+        div.innerHTML = `<div style="font-weight:800">${escapeHtml(o.serviceType || "(no service)")}</div>
+          <div class="tiny">${escapeHtml(o.name)} • ${escapeHtml(o.phone)}</div>
+          <div class="tiny">${escapeHtml(o.date)} ${escapeHtml(o.time)}</div>
+          <div style="margin-top:8px" class="tiny">${escapeHtml(o.address)}</div>
+          <div style="margin-top:12px;display:flex;gap:8px">
+            <button class="btn btn-ghost" data-idx="${idx}" data-act="confirm">Mark Confirmed</button>
+            <button class="btn btn-danger" data-idx="${idx}" data-act="cancel">Cancel</button>
+          </div>`;
+        wrap.appendChild(div);
+      });
+      // bind action buttons
+      $$("#ordersList .btn[data-act]").forEach(btn=>{
+        btn.onclick = (ev) => {
+          const idx = +ev.currentTarget.getAttribute("data-idx");
+          const act = ev.currentTarget.getAttribute("data-act");
+          const sess = getSession();
+          if(!sess){ toast("Please sign in"); showAuth(); return; }
+          const all = getOrders();
+          const list = all[sess.email] || [];
+          if(act === "confirm"){ list[idx].status = "Confirmed"; }
+          if(act === "cancel"){ list.splice(idx,1); }
+          all[sess.email] = list;
+          saveOrders(all);
+          renderOrders();
+          toast(act === "cancel" ? "Order removed" : "Order confirmed");
+        };
+      });
+    }
+    renderOrders();
+
+    // Claims (per-user)
+    function getClaims(){ try{ return JSON.parse(localStorage.getItem(claimsKey) || "{}"); }catch(e){ return {}; } }
+    function saveClaims(c){ localStorage.setItem(claimsKey, JSON.stringify(c)); }
+    function bindClaimButtons(){
+      $$(".card [data-claim]").forEach(btn=>{
+        btn.onclick = (ev) => {
+          const item = ev.currentTarget.getAttribute("data-claim");
+          const sess = getSession();
+          if(!sess){ toast("Please sign in to claim deals"); showAuth(); return; }
+          const all = getClaims();
+          const user = sess.email;
+          all[user] = all[user] || [];
+          if(!all[user].includes(item)){ all[user].push(item); saveClaims(all); toast("Claimed: " + item); }
+          else toast("Already claimed");
+        };
+      });
+    }
+    bindClaimButtons();
+
+    // Shop registration
+    $("#shopForm").addEventListener("submit", (e)=>{
+      e.preventDefault();
+      const pin = $("#sp_pin").value.trim();
+      if(!/^\d{6}$/.test(pin)){ toast("Enter a valid 6-digit pincode"); return; }
+      toast("Shop registration received — we'll contact you.");
+      e.target.reset();
+    });
+
+    // Feedback
+    let fbRating = 5;
+    $$("[data-emoji]").forEach(btn=>{
+      btn.onclick = ()=>{ fbRating = +btn.getAttribute("data-emoji"); toast("Rating: " + fbRating + "/5"); };
+    });
+    $("#fbForm").addEventListener("submit", (e)=>{
+      e.preventDefault();
+      const entry = { rating: fbRating, name: $("#fb_name").value.trim(), text: $("#fb_text").value.trim(), ts: Date.now() };
+      const arr = JSON.parse(localStorage.getItem(feedbackKey) || "[]");
+      arr.unshift(entry);
+      localStorage.setItem(feedbackKey, JSON.stringify(arr));
+      $("#fbForm").reset();
+      renderFeedback();
+      renderAuthFeedbackPreview();
+      toast("Thanks for the feedback!");
+    });
+    function renderFeedback(){
+      const arr = JSON.parse(localStorage.getItem(feedbackKey) || "[]");
+      $("#fbList").innerHTML = arr.slice(0,12).map(f => `<div style="padding:8px;border-radius:10px;background:rgba(255,255,255,0.02);margin-bottom:8px">
+          <div style="font-weight:800">${"★".repeat(f.rating)}${"☆".repeat(5-f.rating)}</div>
+          <div class="tiny" style="margin-top:6px">${escapeHtml(f.text)}</div>
+          <div class="tiny" style="margin-top:6px;color:var(--muted)">${escapeHtml(f.name || "Anonymous")}</div>
+        </div>`).join("") || "<div class='tiny'>No feedback yet.</div>";
+    }
+    renderFeedback();
+
+    // Booking preview (live)
+    const bookingFields = ["bk_name","bk_phone","bk_email","bk_cartype","bk_service","bk_date","bk_time","bk_addr"];
+    bookingFields.forEach(id=>{
+      const el = $("#"+id);
+      if(el){ el.addEventListener("input", renderPreview); el.addEventListener("change", renderPreview); }
+    });
+    function renderPreview(){
+      const d = {};
+      bookingFields.forEach(id => { const el = $("#"+id); d[id.replace("bk_","")] = el ? el.value : ""; });
+      const p = $("#preview");
+      p.innerHTML = `<div class="tiny"><b>${escapeHtml(d.name || "Name")}</b> — ${escapeHtml(d.cartype || "Car")} — ${escapeHtml(d.service || "Service")}<br>
+        <b>${escapeHtml(d.date || "Date")}</b> • <b>${escapeHtml(d.time || "Time")}</b><br>${escapeHtml(d.addr || "Address")}</div>`;
+    }
+    renderPreview();
+
+    // Deals countdown (to midnight)
+    function updateCountdowns(){
+      const now = new Date();
+      const end = new Date(); end.setHours(24,0,0,0);
+      const left = Math.max(0, end - now);
+      const h = String(Math.floor(left/3600000)).padStart(2,"0");
+      const m = String(Math.floor((left%3600000)/60000)).padStart(2,"0");
+      const s = String(Math.floor((left%60000)/1000)).padStart(2,"0");
+      const el = $("#dealTimer1");
+      if(el){
+        const b = el.querySelector("b[data-h]") || el.querySelector("b");
+        el.innerHTML = `<b data-h>${h}</b>h <b data-m>${m}</b>m <b data-s>${s}</b>s`;
+      }
+    }
+    setInterval(updateCountdowns, 1000);
+    updateCountdowns();
+
+    // Animate sections with IntersectionObserver
+    const io = new IntersectionObserver(entries=>{
+      entries.forEach(ent=>{
+        if(ent.isIntersecting){ ent.target.classList.add("visible"); }
+      });
+    }, { threshold: 0.18 });
+    document.querySelectorAll("section").forEach(s => io.observe(s));
+
+    // When app becomes visible (on sign-in), re-bind dynamic elements
+    function onAppShown(){
+      bindClaimButtons();
+      renderOrders();
+      renderFeedback();
+    }
+    // Wrap showAppForSession to call after display (already called in verify flow)
+
+    // Book buttons inside service cards should prefill booking form and open booking section
+    $$(".card [data-service]").forEach(btn=>{
+      btn.addEventListener("click", (ev)=>{
+        const s = ev.currentTarget.getAttribute("data-service");
+        $("#bk_service").value = s;
+        location.hash = "#booking";
+        // focus name input for convenience after small delay
+        setTimeout(()=>$("#bk_name").focus(), 400);
+      });
+    });
+
+    // If user already signed in on load, ensure dynamic binding
+    if(getSession()){ onAppShown(); }
+
+    // Accessibility: allow Enter on verify input to submit
+    $("#auth_code_input").addEventListener("keyup", (e)=>{
+      if(e.key === "Enter") $("#auth_verify_btn").click();
+    });
+  </script>
+</body>
+</html>

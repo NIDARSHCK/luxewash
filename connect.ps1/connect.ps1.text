@@ -1,9 +1,0 @@
-# connect.ps1
-# Sets the password for Render Postgres and opens psql directly
-
-$env:PGPASSWORD = "OFxyFQIYREUJSu58tYtJyoqM668jRDFO"
-
-psql -h dpg-d2tf4fh5pdvs739gs8a0-a.singapore-postgres.render.com `
-     -U luxewash_user `
-     -d luxewash `
-     -p 5432
